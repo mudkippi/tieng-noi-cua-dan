@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Làng Tân Phúc — Tiếng Nói của Dân</title>
+<style>
+:root{--text:#f5f5f5;--accent:#ffeb99;}
+html,body{height:100%;margin:0;background:#000;font-family:"Times New Roman",serif;color:var(--text);overflow:hidden}
+#game{position:relative;width:100vw;height:100vh;overflow:hidden}
+#background{position:absolute;top:0;left:0;width:100%;height:65vh;background-size:cover;background-position:center;transition:opacity .8s ease;opacity:1}
+#background.fade{opacity:0}
+#music-toggle{position:absolute;top:12px;right:12px;z-index:40;padding:8px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--text);border-radius:6px;cursor:pointer}
+#choices{position:absolute;top:8%;left:0;right:0;z-index:30;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px}
+.choice{width:72%;max-width:900px;background:rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:12px 18px;border-radius:8px;font-size:18px;cursor:pointer;text-align:center}
+.choice:hover{background:rgba(0,0,0,0.95)}
+#dialogue{position:absolute;left:0;right:0;bottom:0;height:35vh;background:rgba(0,0,0,0.78);padding:22px 36px;box-sizing:border-box;border-top:2px solid rgba(255,255,255,0.06);z-index:28;display:flex;flex-direction:column;gap:10px}
+#speaker{color:var(--accent);font-weight:700}
+#text{flex:1;overflow:auto;white-space:pre-line;line-height:1.5;font-size:20px;text-shadow:1px 1px 2px #000}
+#next{display:none;margin-left:auto;padding:10px 16px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#fff;cursor:pointer}
+#start{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;padding:14px 28px;background:#fff;color:#000;border:none;border-radius:8px;font-size:18px;cursor:pointer}
+#restart{display:none;position:absolute;left:50%;bottom:36%;transform:translateX(-50%);z-index:50;padding:12px 20px;background:#fff;color:#000;border:none;border-radius:8px;cursor:pointer}
+@media (max-width:600px){ .choice{width:92%;font-size:16px} #text{font-size:18px} }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="background"></div>
+  <button id="music-toggle">Tắt nhạc</button>
+
+  <div id="choices" aria-hidden="true"></div>
+
+  <div id="dialogue" aria-live="polite">
+    <div id="speaker"></div>
+    <div id="text"></div>
+    <div style="display:flex;justify-content:flex-end;">
+      <button id="next">Tiếp tục</button>
+    </div>
+  </div>
+
+  <button id="start">Bắt đầu trò chơi</button>
+  <button id="restart">Chơi lại</button>
+</div>
+
+<audio id="bg-music" loop src="bg-music.mp3"></audio>
+<audio id="click" src="click.mp3"></audio>
+<audio id="voice"></audio>
+
+<script>
+// Game data: 15 scenes (1 intro, 2-11 ten situations, 12-15 endings)
+const scenes = [
+  // 1 Intro
+  {
+    bg: "images/scene1.jpg",
+    voice: "voices/scene1.mp3",
+    speaker: "Tường thuật viên",
+    text: `Năm ấy, sau nhiều năm cống hiến cho thôn xóm, ông Minh được dân làng Tân Phúc tín nhiệm bầu làm trưởng thôn.
+Cái chức ấy nghe thì lớn, nhưng thật ra chỉ là người “đứng giữa dân với trên”, lo từ chuyện cái cầu gỗ tới từng bó rơm, hạt gạo.
+Ông Minh mang trong lòng một ước nguyện giản dị: “Dân mình phải thật sự được nói, được bàn, được làm chủ.”
+Nhưng đường đi của một người lãnh đạo giữa thời dân chủ cơ sở chẳng bao giờ bằng phẳng.
+Lòng dân như nước, chỉ cần nghiêng một chút là tràn bờ.
+Liệu ông Minh có giữ được lòng dân, hay để niềm tin tan như khói chiều trên mái rạ?`
+  },
+
+  // 2 Con đường qua xóm Trại
+  {
+    bg: "images/scene2.jpg",
+    voice: "voices/scene2.mp3",
+    speaker: "Tường thuật viên",
+    text: `Buổi họp làng chiều ấy đông hơn mọi khi. Mọi người ngồi chen chúc, kẻ phe đường mới, người thì bảo “đường cũ đi được, tội gì làm thêm”.
+Ông Minh nhìn quanh, thấy cụ Lự chống gậy, giọng khàn mà rành rẽ:
+“Nói mãi cũng vậy, thôi để ông trưởng quyết đi cho rồi!”
+Bạn làm gì?`,
+    choices: [
+      {type:"A", label:"Cho dân biểu quyết, đa số quyết thế nào thì làm thế đó.", result:"Cuộc họp kéo dài đến tận tối, ai cũng nói, tiếng cãi cọ vang cả đình. Cuối cùng, quyết được thì muộn, thời gian lãng phí.", resultVoice: "voices/result2A.mp3"},
+      {type:"B", label:"Giải thích lợi ích và vận động thêm, nhưng vẫn tôn trọng quyết định cuối của dân.", result:"Người nghe người hiểu, dân bàn rồi đồng thuận. Sáng hôm sau, trai làng đã xắn quần mang cuốc ra đường, tiếng cười xen trong tiếng xẻng.", resultVoice: "voices/result2B.mp3"},
+      {type:"C", label:"Quyết làm luôn, vì nếu để dân bàn nhiều sẽ trễ tiến độ.", result:"Đường mở nhanh thật, nhưng có vài người ngồi quán nước lắc đầu: “Dân chưa kịp bàn, ông Minh đã tính hết rồi.”", resultVoice: "voices/result2C.mp3"}
+    ]
+  },
+
+  // 3 Sổ chi tiêu
+  {
+    bg: "images/scene3.jpg",
+    voice: "voices/scene3.mp3",
+    speaker: "Tường thuật viên",
+    text: `Một sáng, bà Hòa – chủ hộ buôn thóc – ghé lên nhà văn hóa, nói nhỏ:
+“Ông cho tôi xem sổ chi tiêu thôn, coi tiền dân đóng được dùng ra sao.”
+Kế toán bên cạnh chau mày, hắng giọng.
+Bạn xử trí thế nào?`,
+    choices: [
+      {type:"A", label:"Cho họ xem toàn bộ sổ, minh bạch rõ ràng.", result:"Dân khen bạn ngay thẳng, nhưng kế toán đâm ra sợ, hôm sau rỉ tai nhau “ông Minh phơi hết sổ ra cho thiên hạ coi, lộ cả chi trong nội bộ.”", resultVoice: "voices/result3A.mp3"},
+      {type:"B", label:"Cho xem phần liên quan đến dân đóng góp, phần khác giữ nội bộ.", result:"Mọi việc yên, dân vừa lòng, kế toán cũng yên tâm. Nhưng đâu đó, vẫn có tiếng nói nhỏ: “Giá mà được xem hết thì hay.”", resultVoice: "voices/result3B.mp3"},
+      {type:"C", label:"Giải thích là sẽ công khai khi có báo cáo tổng kết, giờ chưa tiện.", result:"Bà Hòa gật đầu, song trên đường về không nói năng gì. Mấy bà hàng xóm lại thì thầm “chắc sổ có điều chi giấu.”", resultVoice: "voices/result3C.mp3"}
+    ]
+  },
+
+  // 4 Chọn người đi họp xã
+  {
+    bg: "images/scene4.jpg",
+    voice: "voices/scene4.mp3",
+    speaker: "Tường thuật viên",
+    text: `Xã gửi giấy mời: “Thôn cử 2 đại diện nhân dân đi dự họp góp ý quy hoạch đất.”
+Ông Minh cầm giấy, suy nghĩ mãi.`,
+    choices: [
+      {type:"C", label:"Tự chọn hai người mình tin cậy.", result:"Buổi họp trên xã diễn ra suôn sẻ, ai nấy đều khen thôn Tân Phúc phát biểu có chừng mực. Nhưng ở làng, vài người lắc đầu: “Lại người nhà ông Minh cả thôi.”", resultVoice: "voices/result4C.mp3"},
+      {type:"A", label:"Đề nghị dân tự chọn qua bỏ phiếu nhanh.", result:"Làng rộn ràng, mất nhiều thời gian, dân vỗ tay vang. “Thôn mình dân chủ thật,” có người nói.", resultVoice: "voices/result4A.mp3"},
+      {type:"B", label:"Gợi ý danh sách rồi để dân chọn trong đó.", result:"Dân thống nhất nhanh, vừa có người đại diện, vừa tránh tranh cãi. Không khí họp làng vui vẻ, trật tự.", resultVoice: "voices/result4B.mp3"}
+    ]
+  },
+
+  // 5 Ý kiến về sân bóng
+  {
+    bg: "images/scene5.jpg",
+    voice: "voices/scene5.mp3",
+    speaker: "Tường thuật viên",
+    text: `Một hộ trẻ trong thôn đề nghị khu đất dự định làm sân bóng nên trồng rau sạch.
+“Bọn nhỏ chơi hoài, đất hư hết. Trồng rau còn bán được.”
+Bạn xử trí thế nào?`,
+    choices:[
+      {type:"A", label:"Cho thử mô hình rau sạch ở góc đất.", result:"Một góc rau xanh mọc lên thật, nhưng chẳng bao lâu người khác cũng đòi phần 'đất thử' riêng, rối như canh hẹ.", resultVoice: "voices/result5A.mp3"},
+      {type:"B", label:"Ghi nhận ý kiến và đưa ra bàn công khai với dân.", result:"Dân họp, ai cũng nói phần mình. Cuối cùng thống nhất giữ sân bóng, nhưng chừa góc đất nhỏ cho mô hình rau sạch. Tiếng vỗ tay vang như trống hội.", resultVoice: "voices/result5B.mp3"},
+      {type:"C", label:"Giải thích sân bóng là nhu cầu chung, khó thay đổi.", result:"Dân im lặng gật đầu, nhưng ánh mắt vài người đã nguội dần, niềm tin cũng thế.", resultVoice: "voices/result5C.mp3"}
+    ]
+  },
+
+  // 6 Công trình nước sạch (revised)
+  {
+    bg: "images/scene6.jpg",
+    voice: "voices/scene6.mp3",
+    speaker: "Tường thuật viên",
+    text: `Giữa trưa oi ả, bà Ngọc, người nấu cơm cho thợ, thở dài:
+“Ông Minh ơi, dân mình góp công góp của, mà nghe nói thợ trộn xi măng ít hơn quy định đó.”  
+Bạn phản ứng ra sao?`,
+    choices:[
+      {type:"A", label:"Cho mời toàn dân cùng ra công trình kiểm tra ngay, công khai trước mọi người.", result:"Dân ùn ùn kéo đến, khiến thợ ngừng tay, nhà thầu hốt hoảng. Cuối cùng xác minh được có thiếu vật tư thật, nhưng không khí căng thẳng khiến mọi việc chậm trễ, ai cũng bàn tán rối rắm.", resultVoice: "voices/result6A.mp3"},
+      {type:"B", label:"Gọi nhà thầu lên làm việc, yêu cầu báo cáo rõ ràng rồi công khai kết quả với dân.", result:"Nhà thầu hơi lúng túng nhưng chấp hành, gửi bản giải trình đầy đủ. Ông Minh đem kết quả ra họp dân công khai, không khí yên lại, dân gật gù: “Rứa mới là minh bạch.”", resultVoice: "voices/result6B.mp3"},
+      {type:"C", label:"Hỏi riêng người phản ánh để nắm tình hình, chưa vội làm lớn.", result:"Tin đồn vẫn cứ lan, mỗi người nói một kiểu. Đến lúc sự việc rõ ràng, dân bảo: “Giá mà trưởng xử sớm thì đỡ mang tiếng.”", resultVoice: "voices/result6C.mp3"}
+    ]
+  },
+
+  // 7 Lời than của người dân
+  {
+    bg: "images/scene7.jpg",
+    voice: "voices/scene7.mp3",
+    speaker: "Tường thuật viên",
+     text: `Một tối chớm đông, gió lùa qua mái ngói.
+Ông Cảnh – người từng góp nhiều công trong việc dựng nhà văn hóa – đứng dậy, giọng khàn nặng trĩu:
+“Đóng góp mãi, mà dân mình vẫn chưa thấy lợi đâu, ông trưởng ạ. Tiền nước sạch, đường làng… toàn hứa mãi.”
+Không khí lặng đi. Mọi ánh mắt đổ dồn về phía bạn.`,
+  choices: [
+    {type: "A", label: "Họp mở cho ai cũng nói hết ý.", result: "Dân tranh nhau phát biểu, tiếng bàn ra tán vào rộn cả đình. Cuối cùng chẳng đi đến đâu.", resultVoice: "voices/result7A.mp3"},
+    {type: "B", label: "Tổ chức một buổi đối thoại riêng, mời ông Cảnh và đại diện các hộ tới để cùng nói rõ từng việc, từng khoản.", result: "Buổi đối thoại diễn ra trong không khí chân tình. Ông Cảnh cuối buổi đứng dậy bắt tay bạn, cười hiền: 'Thôi, tôi hiểu rồi.' Tiếng vỗ tay vang khắp sân.", resultVoice: "voices/result7B.mp3"},
+    {type: "C", label: "Gặp riêng ông Cảnh để giải thích, dỗ dành cho yên chuyện, tránh làm to trước dân.", result: "Ông nguôi ngoai, nhưng tin đồn lại lan: 'Trưởng sợ dân hỏi nên lánh mặt.'", resultVoice: "voices/result7C.mp3"}
+    ]
+  },
+
+  // 8 Chuyện hộ nghèo
+  {
+    bg: "images/scene8.jpg",
+    voice: "voices/scene8.mp3",
+    speaker: "Tường thuật viên",
+    text: `Hai hộ được đề xuất nhận hỗ trợ: nhà ông Phúc – người bạn cũ của bạn – và bà Liên – mẹ đơn thân nuôi ba đứa nhỏ.
+Làng bàn tán, “liệu có thiên vị?”`,
+    choices:[
+      {type:"A", label:"Đưa danh sách ra họp dân biểu quyết lại toàn bộ.", result:"Dân tranh luận nảy lửa, có người đòi thêm, có người phản đối. Cuối cùng không ai vui trọn.", resultVoice: "voices/result8A.mp3"},
+      {type:"B", label:"Trình bày thông tin, lý do dẫn đến quyết định trước dân.", result:"Vẫn có tin đồn đó đây, nhưng đa số dân đều hiểu và tin tưởng.", resultVoice: "voices/result8B.mp3"},
+      {type:"C", label:"Giữ nguyên danh sách, bạn tin vào quyết định của mình.", result:"Dân bàn ra bàn vào: 'Có thân mới có phần.'", resultVoice: "voices/result8C.mp3"}
+    ]
+  },
+
+  // 9 Quy ước về rác thải
+  {
+    bg: "images/scene9.jpg",
+    voice: "voices/scene9.mp3",
+    speaker: "Tường thuật viên",
+    text: `Trong buổi họp, bà Năm Gạo đứng lên nói:
+“Cái khoản phạt vứt rác bừa bãi gắt quá, bỏ đi cho dân dễ thở.”`,
+    choices:[
+      {type:"A", label:"Đưa ra biểu quyết, ý dân thế nào thì làm.", result:"Ai cũng giơ tay, bỏ phạt hết. Một tuần sau, rác bốc mùi khắp đường làng.", resultVoice: "voices/result9A.mp3"},
+      {type:"B", label:"Giải thích lợi ích môi trường rồi giữ nguyên quy định.", result:"Dân gật gù, vài người vẫn khó chịu, nhưng sau đó, đường làng sạch bong.", resultVoice: "voices/result9B.mp3"},
+      {type:"C", label:"Điều chỉnh mức phạt nhẹ hơn, làm bản thử nghiệm 3 tháng.", result:"Dân cười, nhưng lại lén xả nhiều hơn. 'Thử thôi mà,' ai cũng nói.", resultVoice: "voices/result9C.mp3"}
+    ]
+  },
+
+  // 10 Lá thư nặc danh
+  {
+    bg: "images/scene10.jpg",
+    voice: "voices/scene10.mp3",
+    speaker: "Tường thuật viên",
+    text: `Trong hộp góp ý có lá thư tố cáo anh Bảo, cán bộ thôn, “Ăn chặn tiền công trình”`,
+    choices:[
+      {type:"A", label:"Công khai kiểm tra trước dân.", result:"Dân ồ lên, anh Bảo mặt cắt không còn giọt máu. Sau hóa ra thư sai, người viết giấu mặt. Làng xì xào mãi không dứt.", resultVoice: "voices/result10A.mp3"},
+      {type:"B", label:"Giao cấp trên xử lý kín, sau đó thông báo kết quả điều tra cho dân.", result:"Dân im lặng lắng nghe, thấy bạn làm nghiêm, ai nấy thêm kính nể.", resultVoice: "voices/result10B.mp3"},
+      {type:"C", label:"Bác bỏ thông tin từ lá thư.", result:"Câu chuyện dừng lại nhanh, nhưng dân thì đồn: 'Trưởng bao che người nhà.'", resultVoice: "voices/result10C.mp3"}
+    ]
+  },
+
+  // 11 Tổng kết cuối năm
+  {
+    bg: "images/scene11.jpg",
+    voice: "voices/scene11.mp3",
+    speaker: "Tường thuật viên",
+    text: `Cuối năm, bạn cần nộp báo cáo về công tác dân chủ cơ sở.
+Đêm lạnh, đèn dầu leo lét, giấy trắng trước mặt vẫn trống trơn.`,
+    choices:[
+      {type:"A", label:"Bạn viết tích cực, dân đã làm hết sức.", result:"Dân thấy vui, nhưng vài người thắc mắc 'sao báo cáo toàn màu hồng?'", resultVoice: "voices/result11A.mp3"},
+      {type:"B", label:"Cho dân xem bản dự thảo để lấy ý kiến từ nhiều góc nhìn.", result:"Dân thấy vui, góp ý của dân được coi trọng.", resultVoice: "voices/result11B.mp3"},
+      {type:"C", label:"Tự hoàn thành báo cáo, đây là việc của trưởng thôn.", result:"Báo cáo trôi chảy, nhưng dân bảo 'ông Minh dạo này xa dân lắm.'", resultVoice: "voices/result11C.mp3"}
+    ]
+  },
+
+  // 12 Ending 1 (best)
+  {
+    bg: "images/scene12.jpg",
+    voice: "voices/scene12.mp3",
+    speaker: "Kết thúc",
+    ending: `🌿 ENDING 1 – Thôn Dân Chủ Kiểu Mẫu (Tốt nhất)
+
+Mùa gặt năm ấy, cánh đồng Tân Phúc vàng rộ rực rỡ, tiếng cười của dân làng lan khắp các nẻo đường. Người người đều bảo: “Nhờ ông Minh mà thôn ta nên cơ đồ thế này.”
+
+Dân được bàn, dân được làm, dân được biết, dân được kiểm tra — tất cả như lời Bác dạy, chẳng sai một chữ. Mỗi công trình đều có bàn tay góp sức, mỗi quyết định đều in dấu lòng người. Không ai bị bỏ lại sau, cũng chẳng ai bị ép buộc.
+
+Đêm cuối năm, ông Minh ngồi bên đèn dầu, nhìn quyển sổ góp ý dày cộp. Ông mỉm cười: “Dân mình tin rồi, vậy là đủ.”
+
+Một thôn nhỏ, mà lòng người lớn. Cờ đỏ sao vàng phấp phới, niềm tin vững như tre đầu làng.`
+  },
+
+  // 13 Ending 2 (good)
+  {
+    bg: "images/scene13.jpg",
+    voice: "voices/scene13.mp3",
+    speaker: "Kết thúc",
+    ending: `🌾 ENDING 2 – Thôn Ổn Định (Gần tốt nhất)
+
+Tân Phúc yên bình, dân tình đa phần thuận hòa. Đường bê tông đã có, giếng sạch nước trong, lũ trẻ con vẫn chạy chơi trước đình.
+
+Ấy nhưng trong vài buổi họp, vẫn có tiếng xì xào: “Chuyện này hình như trên quyết rồi đó”, hay “Thôi, dân mình nói cũng thế thôi mà.”
+
+Ông Minh nghe, lòng chùng xuống đôi chút. Ông biết mình đã cố, nhưng vẫn còn những điều chưa vẹn. Dân chủ, ông hiểu, chẳng phải chỉ có họp hành hay báo cáo — mà là niềm tin, niềm tin phải được nuôi bằng sự thật mỗi ngày.
+
+Ông đứng nhìn lá cờ bay trong gió sớm, khẽ gật đầu: “Năm tới, mình làm lại. Dân chưa tin hết, thì mình chưa xong nhiệm vụ.”`
+  },
+
+  // 14 Ending 3 (too democratic)
+  {
+    bg: "images/scene14.jpg",
+    voice: "voices/scene14.mp3",
+    speaker: "Kết thúc",
+    ending: `🪶 ENDING 3 – Thôn Quá Dân Chủ, Thiếu Định Hướng
+
+Ở Tân Phúc, chuyện gì cũng đưa ra họp, bàn mãi chẳng ngã ngũ. Người muốn làm đường, người lại muốn giữ ruộng; người đòi xây sân bóng, người lại bảo trồng rau sạch.
+
+Ông Minh, vốn hiền, nghe dân là chính — nhưng cuối cùng, dân cũng… chưa biết nghe ai. Công việc ngổn ngang, dự án dang dở.
+
+Mỗi buổi họp dân, ai cũng nói, nhưng chẳng ai chịu nghe. Đến lúc ấy, ông Minh mới thấm lời cụ cán bộ già:
+
+“Dân chủ mà không có định hướng, thì như thuyền giữa sông không người lái — cuối cùng cũng chỉ quay vòng.”
+
+Tân Phúc vẫn còn vui, nhưng niềm tin đã nhạt. Dân bàn nhiều, mà chẳng ai được hưởng trọn.`
+  },
+
+  // 15 Ending 4 (authoritarian)
+  {
+    bg: "images/scene15.jpg",
+    voice: "voices/scene15.mp3",
+    speaker: "Kết thúc",
+    ending: `🌑 ENDING 4 – Thôn Quan Liêu, Lòng Dân Xa Cách (Xấu nhất)
+
+Tân Phúc chẳng còn rộn rã tiếng cười như trước. Dân làm mà không hiểu, đóng góp mà không rõ, kêu mà chẳng ai nghe.
+
+Ông Minh, vốn nghĩ “làm cho nhanh, để dân được hưởng sớm”, nào ngờ càng làm, dân càng xa. Người bảo “ông ấy chỉ lo trên”, kẻ nói “ý dân đâu còn quan trọng”.
+
+Một hôm, trong buổi họp cuối năm, chỉ lác đác vài người đến. Ông Minh nhìn hàng ghế trống, ngọn đèn dầu chập chờn hắt bóng lên vách.
+
+“Mình sai ở đâu rồi…” — ông khẽ nói.
+
+Dân chủ mất đi, chẳng vì ai khác, mà vì người cầm lái quên rằng: dân là gốc.`
+  }
+];
+
+// State
+let idx = 0; // current scene index in scenes array
+let A = 0, B = 0, C = 0;
+let started = false;
+
+const bgEl = document.getElementById("background");
+const speakerEl = document.getElementById("speaker");
+const textEl = document.getElementById("text");
+const choicesEl = document.getElementById("choices");
+const nextBtn = document.getElementById("next");
+const startBtn = document.getElementById("start");
+const restartBtn = document.getElementById("restart");
+const musicToggle = document.getElementById("music-toggle");
+const bgMusic = document.getElementById("bg-music");
+const clickSnd = document.getElementById("click");
+const voice = document.getElementById("voice");
+
+// Helpers
+function setBackground(path) {
+  bgEl.classList.add("fade");
+  setTimeout(()=> {
+    bgEl.style.backgroundImage = `url('${path}')`;
+    bgEl.classList.remove("fade");
+  }, 300);
+}
+
+function playVoice(path) {
+  if (!started) return;
+  if (!path) return;
+  voice.pause();
+  voice.src = path;
+  voice.currentTime = 0;
+  voice.play().catch(()=>{ /* autoplay may be blocked until user interacts */ });
+}
+
+function playClick() {
+  clickSnd.currentTime = 0;
+  clickSnd.play().catch(()=>{});
+}
+
+function clearChoices() {
+  choicesEl.innerHTML = "";
+  choicesEl.setAttribute("aria-hidden","true");
+}
+
+function showChoices(arr) {
+  clearChoices();
+  choicesEl.setAttribute("aria-hidden","false");
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  shuffled.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.textContent = opt.label;
+    btn.onclick = () => {
+      playClick();
+      // count
+      if (opt.type === "A") A++;
+      if (opt.type === "B") B++;
+      if (opt.type === "C") C++;
+      // show result
+      showResult(opt.result, opt.resultVoice);
+    };
+    choicesEl.appendChild(btn);
+  });
+}
+
+// Typewriter
+let typerTimeout;
+function typeText(full, cb) {
+  textEl.innerHTML = "";
+  let i = 0;
+  if (typerTimeout) clearInterval(typerTimeout);
+  typerTimeout = setInterval(()=> {
+    textEl.innerHTML += full.charAt(i);
+    i++;
+    if (i > full.length) {
+      clearInterval(typerTimeout);
+      typerTimeout = null;
+      if (cb) cb();
+    }
+  }, 18);
+}
+
+// Show scene
+function showScene() {
+  const s = scenes[idx];
+  setBackground(s.bg || "images/scene1.jpg");
+  speakerEl.textContent = s.speaker || "";
+  // play voice if present
+  playVoice(s.voice);
+
+  // If it's an ending
+  if (s.ending) {
+    clearChoices();
+    nextBtn.style.display = "none";
+    typeText(s.ending, () => {
+      restartBtn.style.display = "block";
+      // stop voice if any after reading or let it play
+    });
+    return;
+  }
+
+  // Normal scene with text and maybe choices
+  typeText(s.text, () => {
+    if (s.choices && s.choices.length) {
+      // show choices in order: A (⚪), B (✅), C (❌)
+      showChoices(s.choices);
+      nextBtn.style.display = "none";
+    } else {
+      // If no choices then show continue button
+      clearChoices();
+      nextBtn.style.display = "inline-block";
+    }
+  });
+}
+
+// Show result (after choosing)
+function showResult(resultText, resultVoice) {
+  speakerEl.textContent = "Kết quả";
+  clearChoices();
+
+  // 🔊 Phát voice kết quả (nếu có)
+  if (resultVoice) {
+    voice.pause();
+    voice.src = resultVoice;
+    voice.currentTime = 0;
+    voice.play().catch(()=>{});
+  }
+
+  typeText(resultText, () => {
+    nextBtn.style.display = "inline-block";
+  });
+}
+
+// Advance to next scene or ending calculation
+function nextScene() {
+  nextBtn.style.display = "none";
+  idx++;
+  if (idx < scenes.length - 4) { // scenes 0..10 are intro+10 situations; endings are last 4
+    showScene();
+  } else if (idx === 11) {
+    // after finishing scene 11 (index 10?), ensure mapping: scenes[0]..scenes[10] are first 11.
+    // Our scenes array: index 0..10 are intro+10, indexes 11..14 are endings.
+    // We advanced idx and now if idx==11 we should compute ending index to jump to endings array index 11..14
+    computeAndShowEnding();
+  } else {
+    // Should not reach here directly; fallback
+    showScene();
+  }
+}
+
+function computeAndShowEnding() {
+  // Determine ending:
+  // Condition: best if B === 10 (all balanced)
+  // near best if B between 7..9
+  // else compare A vs C: whichever greater determines ending
+  // Map: ending indices in scenes array are 11..14 (0-based)
+  let endingIndex = 14; // default worst (scene 15)
+  const totalSituations = 10; // scenes 1..10 correspond to types counted
+  if (B === totalSituations) {
+    endingIndex = 11; // scene12
+  } else if (B >= 7) {
+    endingIndex = 12; // scene13
+  } else {
+    if (A > C) endingIndex = 13; // scene14 (too democratic)
+    else endingIndex = 14; // scene15 (authoritarian)
+  }
+  idx = endingIndex;
+  showScene();
+}
+
+// UI events
+nextBtn.onclick = () => {
+  playClick();
+  // If we are before situations end, advance; else if at last situation, compute ending
+  // Determine current index: if current scene had choices and user clicked next, move to next scene index
+  // For flow, we simply increment and handle in nextScene
+  // But need mapping: count of scenes: 0..10 are content; after user clicked through last, call computeEnding
+  // Use nextScene function
+  // However, careful: if idx points to one of intro or situation scenes, just increment
+  // We'll use:
+  // If idx < 10 -> idx++ and showScene; if idx === 10 -> compute ending next
+  if (idx < 10) {
+    idx++;
+    showScene();
+  } else if (idx === 10) {
+    computeAndShowEnding();
+  } else {
+    // inside ending area, do nothing
+  }
+};
+
+startBtn.onclick = async () => {
+  started = true;
+  startBtn.style.display = "none";
+  // try to play bg music and voice
+  try { bgMusic.volume = 0.45; await bgMusic.play(); } catch(e){}
+  try { await playVoice(scenes[0].voice); } catch(e){}
+  // show first scene (intro at idx 0)
+  idx = 0;
+  A = B = C = 0;
+  restartBtn.style.display = "none";
+  showScene();
+};
+
+restartBtn.onclick = () => {
+  playClick();
+  idx = 0;
+  A = B = C = 0;
+  restartBtn.style.display = "none";
+  // reset background to scene1
+  showScene();
+};
+
+musicToggle.onclick = () => {
+  if (bgMusic.paused) {
+    bgMusic.play().catch(()=>{});
+    musicToggle.textContent = "Tắt nhạc";
+  } else {
+    bgMusic.pause();
+    musicToggle.textContent = "Bật nhạc";
+  }
+};
+
+// Allow clicking on choice area to focus
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && startBtn.style.display === "none") {
+    // If choices visible, do nothing; else if next visible, trigger next
+    if (nextBtn.style.display !== "none") nextBtn.click();
+  }
+});
+
+// Safety: stop voice when moving scenes
+voice.addEventListener("ended", ()=>{ /* nothing */ });
+
+// Initialize background if images exist
+bgEl = document.getElementById("background");
+bgEl.style.backgroundImage = `url('${scenes[0].bg}')`;
+</script>
+</body>
+</html>
