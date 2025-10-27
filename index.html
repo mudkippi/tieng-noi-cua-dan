@@ -300,6 +300,7 @@ const clickSnd = document.getElementById("click");
 const voice = document.getElementById("voice");
 const voiceToggle = document.getElementById("voice-toggle");
 let voiceEnabled = true;
+let voiceFolder = "voices/"; // mặc định folder giọng
 
 // Helpers
 function setBackground(path) {
@@ -313,7 +314,12 @@ function setBackground(path) {
 function playVoice(path) {
   if (!started || !voiceEnabled || !path) return;
   voice.pause();
-  voice.src = path;
+  if (!voiceEnabled) return; // nếu tắt voice thì thôi
+if (path) {
+  const file = path.split("/").pop(); // lấy tên file
+  voice.src = voiceFolder + file;     // dùng folder hiện tại
+}
+
   voice.currentTime = 0;
   voice.play().catch(()=>{ /* autoplay may be blocked until user interacts */ });
 }
@@ -405,12 +411,17 @@ function showResult(resultText, resultVoice) {
   clearChoices();
 
   // 🔊 Phát voice kết quả (nếu có)
-  if (resultVoice) {
-    voice.pause();
-    voice.src = resultVoice;
-    voice.currentTime = 0;
-    voice.play().catch(()=>{});
-  }
+if (voiceEnabled && resultVoice) {
+  // Lấy tên file cuối cùng (vd: result2A.mp3)
+  const file = resultVoice.split("/").pop();
+
+  // Nếu tắt voice thì thôi, nếu bật thì lấy đúng folder hiện tại
+  voice.pause();
+  voice.src = voiceFolder + file;
+  voice.currentTime = 0;
+
+  voice.play().catch(()=>{});
+}
 
   typeText(resultText, () => {
     nextBtn.style.display = "inline-block";
