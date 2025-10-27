@@ -11,6 +11,9 @@ html,body{height:100%;margin:0;background:#000;font-family:"Times New Roman",ser
 #background{position:absolute;top:0;left:0;width:100%;height:65vh;background-size:cover;background-position:center;transition:opacity .8s ease;opacity:1}
 #background.fade{opacity:0}
 #music-toggle{position:absolute;top:12px;right:12px;z-index:40;padding:8px 12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:var(--text);border-radius:6px;cursor:pointer}
+#voice-toggle {position: absolute;top: 50px; /* dưới nút nhạc một chút */right: 12px;z-index: 40;padding: 8px 12px;background: rgba(255,255,255,0.08);border: 1px solid rgba(255,255,255,0.12);color: var(--text);border-radius: 6px;cursor: pointer;
+}
+
 #choices{position:absolute;top:8%;left:0;right:0;z-index:30;display:flex;flex-direction:column;align-items:center;gap:10px;padding:0 16px}
 .choice{width:72%;max-width:900px;background:rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:12px 18px;border-radius:8px;font-size:18px;cursor:pointer;text-align:center}
 .choice:hover{background:rgba(0,0,0,0.95)}
@@ -27,6 +30,7 @@ html,body{height:100%;margin:0;background:#000;font-family:"Times New Roman",ser
 <div id="game">
   <div id="background"></div>
   <button id="music-toggle">Tắt nhạc</button>
+  <button id="voice-toggle">Tắt giọng thoại</button>
 
   <div id="choices" aria-hidden="true"></div>
 
@@ -294,6 +298,8 @@ const musicToggle = document.getElementById("music-toggle");
 const bgMusic = document.getElementById("bg-music");
 const clickSnd = document.getElementById("click");
 const voice = document.getElementById("voice");
+const voiceToggle = document.getElementById("voice-toggle");
+let voiceEnabled = true;
 
 // Helpers
 function setBackground(path) {
@@ -305,8 +311,7 @@ function setBackground(path) {
 }
 
 function playVoice(path) {
-  if (!started) return;
-  if (!path) return;
+  if (!started || !voiceEnabled || !path) return;
   voice.pause();
   voice.src = path;
   voice.currentTime = 0;
@@ -502,6 +507,17 @@ musicToggle.onclick = () => {
   }
 };
 
+voiceToggle.onclick = () => {
+  voiceEnabled = !voiceEnabled;
+
+  if (voiceEnabled) {
+    voiceToggle.textContent = "Tắt giọng thoại";
+  } else {
+    voice.pause();
+    voiceToggle.textContent = "Bật giọng thoại";
+  }
+};
+
 // Allow clicking on choice area to focus
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && startBtn.style.display === "none") {
@@ -519,5 +535,3 @@ bgEl.style.backgroundImage = `url('${scenes[0].bg}')`;
 </script>
 </body>
 </html>
-
-
